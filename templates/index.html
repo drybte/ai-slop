@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Game Advisor</title>
+    <style>
+        :root {
+            --primary: #9d4edd;
+            --primary-hover: #7b2cbf;
+            --bg: #0f0c29;
+            --card-bg: #1b1b3a;
+            --text: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        h1 {
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+            font-size: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        input {
+            width: 80%;
+            padding: 12px;
+            border-radius: 25px;
+            border: none;
+            background: #2d2d5a;
+            color: white;
+            outline: none;
+            text-align: center;
+            font-size: 1rem;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: 0.3s;
+            text-transform: uppercase;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+
+        #result {
+            margin-top: 2rem;
+            padding: 15px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            min-height: 50px;
+            display: none;
+            line-height: 1.5;
+            border-left: 4px solid var(--primary);
+        }
+
+        .loader {
+            display: none;
+            margin: 20px auto;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Game Advisor</h1>
+    <p>Zadej svůj oblíbený žánr (např. FPS, RPG, Závodní) a AI ti vybere hru na míru!</p>
+
+    <div class="input-group">
+        <input type="text" id="genreInput" placeholder="Napiš žánr..." onkeypress="handleKeyPress(event)">
+    </div>
+
+    <button id="sendBtn" onclick="getRecommendation()">Doporuč mi hru</button>
+
+    <div class="loader" id="loader"></div>
+    <div id="result"></div>
+</div>
+
+<script>
+    function handleKeyPress(event) {
+        if (event.key === "Enter") {
+            getRecommendation();
+        }
+    }
+
+    async function getRecommendation() {
+        const input = document.getElementById('genreInput');
+        const resultDiv = document.getElementById('result');
+        const loader = document.getElementById('loader');
+        const btn = document.getElementById('sendBtn');
+        
+        const genre = input.value.trim();
+        
+        if (!genre) {
+            alert("Prosím, zadej nějaký žánr!");
+            return;
+        }
+
+        // UI stav - načítání
+        resultDiv.style.display = 'none';
+        loader.style.display = 'block';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('/recommend', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ genre: genre })
+            });
+
+            const data = await response.json();
+
+            loader.style.display = 'none';
+            resultDiv.style.display = 'block';
+            btn.disabled = false;
+
+            if (data.recommendation) {
+                resultDiv.innerHTML = `<strong>AI doporučuje:</strong><br>${data.recommendation}`;
+                resultDiv.style.borderLeftColor = "#9d4edd";
+            } else {
+                resultDiv.innerText = "Chyba: " + (data.error || "Nepodařilo se získat odpověď.");
+                resultDiv.style.borderLeftColor = "red";
+            }
+        } catch (error) {
+            loader.style.display = 'none';
+            resultDiv.style.display = 'block';
+            btn.disabled = false;
+            resultDiv.innerText = "Chyba při spojení se serverem.";
+            resultDiv.style.borderLeftColor = "red";
+        }
+    }
+</script>
+
+</body>
+</html>
